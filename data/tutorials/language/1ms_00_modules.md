@@ -112,10 +112,10 @@ let data = ["a"; "beautiful"; "day"]
 let () = List.iter (printf "%s\n") data
 ```
 
- The standard library is a module called `Stdlib`. It contains
- [submodules](#submodules) `List`, `Option`, `Either`, and more. By default, the
- OCaml compiler opens the standard library, as if you had written `open Stdlib`
- at the top of every file. Refer to Dune documentation if you need to opt-out.
+The standard library is a module called `Stdlib`. It contains
+[submodules](#submodules) `List`, `Option`, `Either`, and more. By default, the
+OCaml compiler opens the standard library, as if you had written `open Stdlib`
+at the top of every file. Refer to Dune documentation if you need to opt-out.
 
 You can open a module inside a definition, using the `let open ... in` construct:
 
@@ -177,7 +177,7 @@ val hello : unit -> unit
 (** [hello ()] displays a greeting message. *)
 ```
 
-**Note**: The double asterisk at the beginning indicates a
+**Note**: The open parenthenses and double asterisk `(**` at the beginning and a closed parenthesis with a single asterisks `*)` indicates a
 comment meant for API documentation tools, such as
 [`odoc`](https://github.com/ocaml/odoc). It is a good habit to document `.mli`
 files using the format supported by this tool.
@@ -296,7 +296,7 @@ val gimel_of_bool : bool -> gimel
 - : string = "Christine"
 ```
 
-Type `gimel` is _abstract_. Values can be created or manipulated, but only as function results or arguments. Just the provided functions `gimel_of_bool`, `gimel_flip`, and `gimel_to_string` or polymorphic functions can receive or return `gimel` values.
+Type `gimel` is _abstract_. This is because the type is exposed in the `exeter.mli` file as `type gimel` and `type gimel = Christos | Chrisine` in the `exeter.ml` file. In this way, Values can be created or manipulated, but only as function results or arguments. Just the provided functions `gimel_of_bool`, `gimel_flip`, and `gimel_to_string` or polymorphic functions can receive or return `gimel` values.
 
 ```ocaml
 # #show dalet;;
@@ -315,7 +315,7 @@ Error: Cannot create values of the private type Exeter.dalet
 val dalet_to_string : dalet -> string = <fun>
 ```
 
-The type `dalet` is _read-only_. Pattern matching is possible, but values can only be constructed by the provided functions, here `dalet_of`.
+The type `dalet` is `private` and therefore _read-only_. Pattern matching is possible, but values can only be constructed by the provided functions, here `dalet_of`.
 
 Abstract and read-only types can be either variants, as shown in this section, records, or aliases. It is possible to access a read-only record field's value, but creating such a record requires using a provided function.
 
@@ -374,8 +374,8 @@ The first version made `Florence.Hello.message` public. In this version it can't
 
 ### Module Signatures are Types
 
-The role played by module signatures to implementations is akin to the role played by types to values. Here is a third possible way to write file `florence.ml`:
-
+The role played by module signatures in implementations is akin to the role played by types to values. Here is a third possible way to write the `florence.ml` file:
+q
 ```ocaml
 module type HelloType = sig
   val print : unit -> unit
@@ -393,12 +393,14 @@ First, we define a `module type` called `HelloType`, which defines the same modu
 
 This allows writing interfaces shared by several modules. An implementation satisfies any module type listing some of its contents. This implies a module may have several types and that there is a subtyping relationship between module types.
 
+<!-- NOTE: If there is ever a dedicated tutorial on Subtyping, it can be linked here 2025-02-18 -->
+
 ## Module Manipulation
 
 ### Displaying a Module's Interface
 
 You can use the OCaml toplevel to see the contents of an existing
-module, such as `Unit`:
+module, such as `Unit`, using the directive `#show`:
 
 ```ocaml
 # #show Unit;;
@@ -423,13 +425,15 @@ You can also use Anil Madhavapeddy's [`ocaml-print-intf`](https://github.com/avs
 * Call it on a `.cmi` file (Compiled ML Interface): `ocaml-print-intf cairo.cmi`.
 * Call it using Dune: `dune exec -- ocaml-print-intf cairo.ml`
 
-If you are using Dune, `.cmi` file are in the `_build` directory. Otherwise, you can compile manually to generate them. The command `ocamlc -c cairo.ml` will create `cairo.cmo` (the executable bytecode) and `cairo.cmi` (the compiled interface). See [Compiling OCaml Projects](docs/compiling-ocaml-projects) for details on compilation without Dune.
+If you are using Dune, `.cmi` files will be built and stored in the `_build` directory tree.
+
+Otherwise, you can compile manually to generate them using the command line. The command `ocamlc -c cairo.ml` will create `cairo.cmo` (the executable bytecode) and `cairo.cmi` (the compiled interface). See [Compiling OCaml Projects](docs/compiling-ocaml-projects) for details on compilation without Dune.
 
 ### Module Inclusion
 
-Let's say we feel that a function is missing from the `List` module,
-but we really want it as if it were part of it. In an `extlib.ml` file, we
-can achieve this effect by using the `include` directive:
+Let's say we feel that a specific function is missing from the `List` module,
+and we wish to create a module that includes everything in the List module in addition to our specific function. To do so, we can create an `extlib.ml` file and
+achieve our goal by using the `include` keyword:
 
 ```ocaml
 module List = struct
@@ -440,7 +444,7 @@ module List = struct
 end
 ```
 
-It creates a module `Extlib.List` that has everything the standard `List` module
+This creates a module `Extlib.List` that has everything the standard `List` module
 has, plus a new `uncons` function. In order to override the default `List`
 module from another `.ml` file, we need to add `open Extlib` at the beginning.
 
@@ -465,17 +469,18 @@ val s : Random.State.t = <abstr>
 - : int = 89809344
 ```
 
-Values returned by `Random.bits` will differ when you run this code. The first
+Values returned by `Random.bits` will differ when the code is executed multiple times. The first
 and third calls return the same results, showing that the internal state was
-reset.
+reset after calling `Random.set_state s`.
 
 ## Conclusion
 
 OCaml, modules are the basic means of organising software. To sum up, a
 module is a collection of definitions wrapped under a name. These definitions
-can be submodules, which allows the creation of hierarchies of modules.
-Top-level modules must be files and are the units of compilation. Every module
-has an interface, which is the list of definitions a module exposes. By default,
+can be submodules, which creates a of hierarchies of modules.
+
+Top-level modules are files and constitute units of compilation. Every module
+has an interface whether they are explicitly defined or are implicitly inferred. These interfaces define what a module exposes to other files. By default,
 a module's interface exposes all its definitions, but this can be restricted
 using the interface syntax.
 
